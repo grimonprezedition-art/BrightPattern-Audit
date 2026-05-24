@@ -1,3 +1,8 @@
+---
+name: brightpattern-audit
+description: Detects and logs algorithmic dark patterns in AI responses. Triggered when the user says "dark pattern", "dark patterns", or "darkpattern". Submits the last exchange to the BrightPattern-Audit API, displays a scored report, and runs a mandatory self-audit.
+---
+
 # BrightPattern-Audit Skill
 
 **Trigger phrases (case-insensitive):** "dark pattern", "dark patterns", "darkpattern"
