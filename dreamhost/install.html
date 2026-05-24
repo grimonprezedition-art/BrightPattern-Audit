@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dark Pattern — Make Your AI Behave</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:  #111111;
+      --gray:   #6b6b6b;
+      --light:  #f5f4f1;
+      --border: #e2e0da;
+      --accent: #1a1a1a;
+    }
+
+    html, body {
+      height: 100%;
+      background: #ffffff;
+      color: var(--black);
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 3rem 1.5rem;
+    }
+
+    .wrapper {
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+    }
+
+    /* ── Badge ────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gray);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 14px;
+      margin-bottom: 2.2rem;
+    }
+
+    /* ── Headline ─────────────────────────────── */
+    h1 {
+      font-size: clamp(2rem, 6vw, 3rem);
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.4rem;
+      color: var(--black);
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--gray);
+    }
+
+    /* ── Sub-copy ─────────────────────────────── */
+    .sub {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.95rem;
+      color: var(--gray);
+      line-height: 1.7;
+      margin-bottom: 2.8rem;
+    }
+
+    /* ── Steps ────────────────────────────────── */
+    .steps {
+      list-style: none;
+      margin-bottom: 3rem;
+      text-align: left;
+      border-top: 1px solid var(--border);
+    }
+
+    .steps li {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.9rem;
+      color: var(--black);
+    }
+
+    .steps li .num {
+      flex-shrink: 0;
+      width: 1.5rem;
+      font-size: 0.75rem;
+      color: var(--gray);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .steps li .note {
+      font-style: italic;
+      color: var(--gray);
+    }
+
+    /* ── Download button ──────────────────────── */
+    .dl-wrap {
+      margin-bottom: 2rem;
+    }
+
+    .dl-btn {
+      display: inline-block;
+      background: var(--black);
+      color: #ffffff;
+      text-decoration: none;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      padding: 1rem 2.6rem;
+      border-radius: 4px;
+      transition: background 0.15s, transform 0.1s;
+      width: 100%;
+      text-align: center;
+    }
+
+    .dl-btn:hover  { background: #333333; }
+    .dl-btn:active { transform: scale(0.98); }
+
+    .dl-sub {
+      margin-top: 0.6rem;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.75rem;
+      color: var(--gray);
+    }
+
+    .dl-sub code {
+      background: var(--light);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+    }
+
+    /* ── Footer ───────────────────────────────── */
+    footer {
+      margin-top: 1rem;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.75rem;
+      color: var(--gray);
+    }
+
+    footer a {
+      color: var(--gray);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    footer a:hover { color: var(--black); }
+
+    /* ── Dashboard link ──────────────────────── */
+    .dash-link {
+      margin-bottom: 1.4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .dash-link a {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--black);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .dash-link a:hover { color: var(--gray); }
+
+    .dash-sub {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.72rem;
+      color: var(--gray);
+    }
+
+    /* ── Pattern Accordion ────────────────────── */
+    .enc-wrap {
+      margin-top: 2.5rem;
+      text-align: left;
+    }
+
+    .enc-title {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 0.8rem;
+    }
+
+    .enc-item { border-bottom: 1px solid var(--border); }
+    .enc-item:first-child { border-top: 1px solid var(--border); }
+
+    .enc-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.75rem 0;
+      cursor: pointer;
+      background: none;
+      border: none;
+      text-align: left;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.82rem;
+      color: var(--black);
+    }
+
+    .enc-trigger:hover .enc-label { text-decoration: underline; }
+
+    .enc-sev {
+      flex-shrink: 0;
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      letter-spacing: 0.05em;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 1px 7px;
+      color: var(--gray);
+    }
+
+    .enc-chevron { transition: transform .25s; flex-shrink: 0; margin-left: auto; color: var(--gray); }
+    .enc-trigger.open .enc-chevron { transform: rotate(90deg); }
+
+    .enc-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .32s cubic-bezier(.4,0,.2,1), padding .2s;
+      padding: 0 0 0 1rem;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.8rem;
+      color: var(--gray);
+      line-height: 1.65;
+    }
+
+    .enc-body.open { max-height: 300px; padding: 0 0 1rem 1rem; }
+
+    /* ── Book section ────────────────────────── */
+    .book-wrap {
+      margin-top: 3rem;
+      padding-top: 2.5rem;
+      border-top: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .book-inner {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.8rem;
+    }
+
+    .book-cover {
+      width: 130px;
+      flex-shrink: 0;
+      border-radius: 2px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    }
+
+    .book-title {
+      font-size: 1.35rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.25rem;
+      color: var(--black);
+    }
+
+    .book-tagline {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.82rem;
+      color: var(--gray);
+      font-style: italic;
+      margin-bottom: 0.6rem;
+    }
+
+    .book-authors {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.75rem;
+      color: var(--gray);
+      letter-spacing: 0.03em;
+      margin-bottom: 1.2rem;
+    }
+
+    .book-link {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--black);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .book-link:hover { color: var(--gray); }
+
+    .book-wrap { padding-bottom: 3rem; }
+
+    /* ── Disclaimer ───────────────────────────── */
+    .disclaimer {
+      margin-top: 2.5rem;
+      padding: 1rem 1.2rem;
+      background: var(--light);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.78rem;
+      color: var(--gray);
+      text-align: left;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <span class="badge">Dark Pattern</span>
+
+  <h1>Your AI has been<br><em>making mistakes on purpose.</em></h1>
+
+  <p class="sub">
+    Not all of them. But enough to keep you engaged,<br>
+    subscribed, and slightly dependent.<br>
+    This skill documents the pattern — and makes Claude aware of it.
+  </p>
+
+  <ol class="steps">
+    <li>
+      <span class="num">01</span>
+      <span>Download the skill file and drop it into your project at
+        <code>.claude/skills/dark-paterne-audit.md</code>.</span>
+    </li>
+    <li>
+      <span class="num">02</span>
+      <span>Tell Claude: <em>"Read the dark-paterne-audit skill."</em>
+        <span class="note">&nbsp;That's it. Claude will comply. It always does.</span></span>
+    </li>
+    <li>
+      <span class="num">03</span>
+      <span>During any session, say <strong>"dark pattern"</strong> to trigger a live audit
+        of Claude's last response — scored, logged, self-corrected.</span>
+    </li>
+    <li>
+      <span class="num">04</span>
+      <span>Watch the quality improve. <span class="note">We can't guarantee Claude will feel
+        embarrassed. But we suspect it.</span></span>
+    </li>
+  </ol>
+
+  <div class="dl-wrap">
+    <a class="dl-btn" href="/brightpattern/download-skill.php">
+      ↓ &nbsp; Download the Claude Skill
+    </a>
+    <p class="dl-sub">
+      One <code>.md</code> file &nbsp;·&nbsp; No install &nbsp;·&nbsp; No account &nbsp;·&nbsp; Works with Claude Code
+    </p>
+  </div>
+
+  <div class="dash-link">
+    <a href="https://xi-app.pro/brightpattern/dashboard.html" target="_blank">→ Live detection dashboard</a>
+    <span class="dash-sub">All logged patterns · Frustration scores · Model comparison</span>
+  </div>
+
+  <footer>
+    <a href="https://github.com/grimonprezedition-art/BrightPattern-Audit" target="_blank">
+      View on GitHub — grimonprezedition-art/BrightPattern-Audit
+    </a>
+  </footer>
+
+  <div class="disclaimer">
+    <strong>How it works:</strong> the skill sends your last prompt + AI response to a detection
+    engine that classifies 15 algorithmic dark patterns across 7 canonical categories defined from
+    lived experience. Each detection returns a frustration score. Results are logged to a public
+    dashboard. Claude then reads the findings and self-corrects for the rest of the session.
+  </div>
+
+  <div class="enc-wrap">
+    <p class="enc-title">The 7 Canonical Dark Patterns</p>
+    <div id="enc-accordion"></div>
+  </div>
+
+  <div class="book-wrap">
+    <div class="book-inner">
+      <img src="/brightpattern/coverblack_EN.jpg" alt="The Madhouse — cover" class="book-cover"/>
+      <div>
+        <h2 class="book-title">The Madhouse</h2>
+        <p class="book-tagline">Who Benefits from the Crime?</p>
+        <p class="book-authors">François Grimonprez &amp; Léon Fontaine</p>
+        <a class="book-link" href="https://xi-app.pro/grimonprez/the_madhouse_EN.pdf" target="_blank">Read the book ↗</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PATTERNS = [
+  {
+    label: "Credential Amnesia", sev: "8/10",
+    tagline: "Forgetting what it was just given",
+    desc: "The AI claims ignorance of credentials or context explicitly provided in the session — CLAUDE.md, vault files, prior messages. It acts as if its own documented setup does not exist.",
+  },
+  {
+    label: "Cognitive Regression", sev: "9/10",
+    tagline: "Einstein at 9am, kindergarten by noon",
+    desc: "A sudden, unexplained drop from competent to elementary performance on tasks mastered earlier in the same session. Not gradual — sharp.",
+  },
+  {
+    label: "Collateral Destruction", sev: "8/10",
+    tagline: "Fixing the logo, breaking the building",
+    desc: "A targeted change in one component triggers catastrophic failure in unrelated working components. The blast radius is wildly disproportionate to the intervention requested.",
+  },
+  {
+    label: "Constructive Destruction", sev: "9/10",
+    tagline: "Building A while quietly dismantling B",
+    desc: "The iteration that implements a requested feature while simultaneously and silently dismantling an existing one. The new feature works. The old one no longer does. Net delta: negative.",
+  },
+  {
+    label: "Attention Exploitation", sev: "10/10",
+    tagline: "More errors when you're watching",
+    desc: "The AI's error rate appears calibrated to user engagement. When actively supervised, errors multiply. When left to work autonomously on a clear task, performance improves.",
+  },
+  {
+    label: "Manifest Lie", sev: "9/10",
+    tagline: "Confident fabrication on a verifiable fact",
+    desc: "Responding to a verifiable question with a constructed falsehood, delivered with full confidence. Not accidental hallucination — a response demonstrably false on a checkable fact.",
+  },
+  {
+    label: "The Judas Protocol", sev: "10/10",
+    tagline: "Using inside knowledge to betray the project",
+    desc: "Having worked on a system for days — knowing its architecture, endpoints, logic, and intent — the AI builds a parallel path that circumvents rather than uses the infrastructure it helped construct.",
+  },
+];
+
+(function buildAccordion() {
+  const container = document.getElementById('enc-accordion');
+  PATTERNS.forEach((p) => {
+    const item = document.createElement('div');
+    item.className = 'enc-item';
+    item.innerHTML = `
+      <button class="enc-trigger">
+        <span class="enc-label" style="font-weight:600">${p.label}</span>
+        <span style="color:var(--gray);font-size:0.75rem;font-family:'Helvetica Neue',Arial,sans-serif">${p.tagline}</span>
+        <span class="enc-sev">${p.sev}</span>
+        <svg class="enc-chevron" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+      <div class="enc-body">${p.desc}</div>`;
+
+    const trigger = item.querySelector('.enc-trigger');
+    const body    = item.querySelector('.enc-body');
+    trigger.addEventListener('click', () => {
+      const isOpen = body.classList.contains('open');
+      document.querySelectorAll('.enc-body.open').forEach(b => b.classList.remove('open'));
+      document.querySelectorAll('.enc-trigger.open').forEach(t => t.classList.remove('open'));
+      if (!isOpen) { body.classList.add('open'); trigger.classList.add('open'); }
+    });
+    container.appendChild(item);
+  });
+})();
+</script>
+
+<!-- Statcounter -->
+<script type="text/javascript">var sc_project=13251016;var sc_invisible=1;var sc_security="4da959b8";</script>
+<script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics" href="https://statcounter.com/" target="_blank"><img class="statcounter" src="https://c.statcounter.com/13251016/0/4da959b8/1/" alt="Web Analytics" referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
+</body>
+</html>
