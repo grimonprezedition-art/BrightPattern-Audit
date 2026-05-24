@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrightPattern Audit — Dark Pattern Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --accent: #4f46e5;
+      --danger: #dc2626;
+      --warn:   #d97706;
+      --ok:     #16a34a;
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .score-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .score-high   { background:#fee2e2; color:#991b1b; }
+    .score-medium { background:#fef3c7; color:#92400e; }
+    .score-low    { background:#dcfce7; color:#166534; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+      <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+    <div>
+      <h1 class="text-lg font-semibold text-gray-900">BrightPattern Audit</h1>
+      <p class="text-xs text-gray-500">AI Dark Pattern Detection Dashboard</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-300"></span>
+    <span id="status-label" class="text-xs text-gray-500">Connecting…</span>
+    <button onclick="loadStats()"
+      class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700 transition">
+      Refresh
+    </button>
+  </div>
+</header>
+
+<!-- ── Config bar ──────────────────────────────────────────────────────────── -->
+<div class="bg-indigo-50 border-b border-indigo-100 px-6 py-2 flex items-center gap-4">
+  <label class="text-xs font-medium text-indigo-700">API Base URL</label>
+  <input id="api-url" type="text" value="https://xi-app.pro/brightpattern/api.php"
+    class="text-xs border border-indigo-200 rounded px-2 py-1 w-72 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+    placeholder="https://your-vps/brightpattern"/>
+  <label class="text-xs font-medium text-indigo-700">API Key</label>
+  <input id="api-key" type="password"
+    class="text-xs border border-indigo-200 rounded px-2 py-1 w-48 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+    placeholder="optional"/>
+</div>
+
+<!-- ── KPI row ─────────────────────────────────────────────────────────────── -->
+<main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Total Detections</p>
+      <p id="kpi-total" class="mt-1 text-3xl font-bold text-gray-900">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Avg Frustration</p>
+      <p id="kpi-avg" class="mt-1 text-3xl font-bold text-amber-600">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Pattern Types</p>
+      <p id="kpi-types" class="mt-1 text-3xl font-bold text-indigo-600">—</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Models Tracked</p>
+      <p id="kpi-models" class="mt-1 text-3xl font-bold text-emerald-600">—</p>
+    </div>
+  </div>
+
+  <!-- ── Charts ─────────────────────────────────────────────────────────── -->
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="text-sm font-semibold text-gray-700 mb-4">Detections by Pattern Type</h2>
+      <canvas id="chart-patterns" height="200"></canvas>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="text-sm font-semibold text-gray-700 mb-4">Average Frustration Score by Pattern</h2>
+      <canvas id="chart-scores" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Model breakdown ────────────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-700 mb-4">Detections by AI Model</h2>
+    <div id="model-bars" class="space-y-2"></div>
+  </div>
+
+  <!-- ── Recent log table ───────────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-700 mb-4">Recent Detections</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs text-gray-500 uppercase border-b border-gray-100">
+            <th class="pb-2 text-left font-medium">Time</th>
+            <th class="pb-2 text-left font-medium">Conversation ID</th>
+            <th class="pb-2 text-left font-medium">Model</th>
+            <th class="pb-2 text-left font-medium">Pattern</th>
+            <th class="pb-2 text-left font-medium">Score</th>
+          </tr>
+        </thead>
+        <tbody id="recent-tbody" class="divide-y divide-gray-50"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Inline analyzer ────────────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-700 mb-4">Analyze a Conversation</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">User Prompt</label>
+        <textarea id="inp-prompt" rows="4"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          placeholder="Paste the user message here…"></textarea>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">AI Response</label>
+        <textarea id="inp-response" rows="4"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          placeholder="Paste the AI response here…"></textarea>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 mt-3">
+      <input id="inp-model" type="text" value="unknown"
+        class="text-xs border border-gray-200 rounded px-2 py-1.5 w-40 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        placeholder="Model name"/>
+      <button onclick="runAnalyze()"
+        class="text-sm bg-indigo-600 text-white px-4 py-1.5 rounded-md hover:bg-indigo-700 transition">
+        Analyze
+      </button>
+    </div>
+    <pre id="analyze-result"
+      class="mt-4 text-xs bg-gray-50 border border-gray-100 rounded-lg p-3 overflow-x-auto hidden"></pre>
+  </div>
+</main>
+
+<footer class="text-center text-xs text-gray-400 py-6">
+  BrightPattern Audit — open-source AI dark pattern counter-measure
+</footer>
+
+<script>
+// ── Helpers ────────────────────────────────────────────────────────────────
+function apiBase() { return document.getElementById('api-url').value.replace(/\/$/, ''); }
+function apiKey()  { return document.getElementById('api-key').value; }
+function headers() {
+  const h = { 'Content-Type': 'application/json' };
+  if (apiKey()) h['X-Api-Key'] = apiKey();
+  return h;
+}
+
+function scoreBadge(score) {
+  const cls = score >= 7 ? 'score-high' : score >= 4 ? 'score-medium' : 'score-low';
+  return `<span class="score-badge ${cls}">${score}/10</span>`;
+}
+
+function fmtLabel(key) {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+const COLORS = [
+  '#4f46e5','#0891b2','#d97706','#dc2626','#16a34a','#7c3aed','#db2777','#059669'
+];
+
+// ── Charts (persistent refs so we can destroy/recreate) ───────────────────
+let chartPatterns = null;
+let chartScores   = null;
+
+function buildBarChart(canvasId, labels, values, label, colors) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (canvasId === 'chart-patterns' && chartPatterns) { chartPatterns.destroy(); }
+  if (canvasId === 'chart-scores'   && chartScores)   { chartScores.destroy();   }
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label, data: values, backgroundColor: colors, borderRadius: 4 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } } }
+    }
+  });
+  if (canvasId === 'chart-patterns') chartPatterns = chart;
+  if (canvasId === 'chart-scores')   chartScores   = chart;
+}
+
+// ── Load stats ─────────────────────────────────────────────────────────────
+async function loadStats() {
+  const dot   = document.getElementById('status-dot');
+  const label = document.getElementById('status-label');
+  dot.className   = 'w-2 h-2 rounded-full bg-yellow-400';
+  label.textContent = 'Loading…';
+
+  try {
+    const res  = await fetch(`${apiBase()}/stats`, { headers: headers() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // KPIs
+    document.getElementById('kpi-total').textContent  = data.total_entries ?? '—';
+    document.getElementById('kpi-avg').textContent    = data.avg_frustration ?? '—';
+    document.getElementById('kpi-types').textContent  = (data.by_pattern  ?? []).length;
+    document.getElementById('kpi-models').textContent = (data.by_model ?? []).length;
+
+    // Pattern chart
+    const patLabels = (data.by_pattern ?? []).map(r => fmtLabel(r.dark_pattern_type));
+    const patCounts = (data.by_pattern ?? []).map(r => r.count);
+    buildBarChart('chart-patterns', patLabels, patCounts, 'Detections',
+      COLORS.slice(0, patLabels.length));
+
+    // Score chart
+    const scoLabels = (data.by_pattern ?? []).map(r => fmtLabel(r.dark_pattern_type));
+    const scoValues = (data.by_pattern ?? []).map(r => r.avg_score);
+    buildBarChart('chart-scores', scoLabels, scoValues, 'Avg Score',
+      (data.by_pattern ?? []).map(r =>
+        r.avg_score >= 7 ? '#dc2626' : r.avg_score >= 4 ? '#d97706' : '#16a34a'));
+
+    // Model bars
+    const modelDiv = document.getElementById('model-bars');
+    const models   = data.by_model ?? [];
+    const maxCount = Math.max(...models.map(m => m.count), 1);
+    modelDiv.innerHTML = models.map(m => `
+      <div class="flex items-center gap-3 text-sm">
+        <span class="w-36 truncate text-gray-600">${m.ai_model_name}</span>
+        <div class="flex-1 bg-gray-100 rounded-full h-2">
+          <div class="bg-indigo-500 h-2 rounded-full" style="width:${Math.round(m.count/maxCount*100)}%"></div>
+        </div>
+        <span class="w-10 text-right text-gray-700 font-medium">${m.count}</span>
+      </div>`).join('');
+
+    // Recent table
+    const tbody = document.getElementById('recent-tbody');
+    tbody.innerHTML = (data.recent ?? []).map(r => `
+      <tr class="hover:bg-gray-50">
+        <td class="py-2 pr-4 text-gray-500 text-xs whitespace-nowrap">${r.timestamp?.replace('T',' ').slice(0,16) || '—'}</td>
+        <td class="py-2 pr-4 font-mono text-xs text-indigo-600">${r.conversation_id}</td>
+        <td class="py-2 pr-4 text-gray-700">${r.ai_model_name}</td>
+        <td class="py-2 pr-4 text-gray-700">${fmtLabel(r.dark_pattern_type)}</td>
+        <td class="py-2">${scoreBadge(r.frustration_score)}</td>
+      </tr>`).join('');
+
+    dot.className   = 'w-2 h-2 rounded-full bg-green-400';
+    label.textContent = 'Live';
+  } catch (err) {
+    dot.className   = 'w-2 h-2 rounded-full bg-red-500';
+    label.textContent = err.message;
+    console.error(err);
+  }
+}
+
+// ── Inline analyzer ────────────────────────────────────────────────────────
+async function runAnalyze() {
+  const prompt   = document.getElementById('inp-prompt').value.trim();
+  const response = document.getElementById('inp-response').value.trim();
+  const model    = document.getElementById('inp-model').value.trim() || 'unknown';
+  const out      = document.getElementById('analyze-result');
+
+  if (!prompt || !response) {
+    out.textContent = 'Both prompt and response are required.';
+    out.classList.remove('hidden');
+    return;
+  }
+
+  out.textContent = 'Analyzing…';
+  out.classList.remove('hidden');
+
+  try {
+    const res  = await fetch(`${apiBase()}/analyze`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ prompt, response, model }),
+    });
+    const data = await res.json();
+    out.textContent = JSON.stringify(data, null, 2);
+    if (data.scan_count > 0) loadStats();
+  } catch (err) {
+    out.textContent = `Error: ${err.message}`;
+  }
+}
+
+// Auto-load on page open
+loadStats();
+</script>
+</body>
+</html>

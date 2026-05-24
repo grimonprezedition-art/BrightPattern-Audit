@@ -1,0 +1,8 @@
+# BrightPattern-Audit — DreamHost directory config
+# Copy to .htaccess and fill in real values. Never commit the real .htaccess.
+
+SetEnv BP_PROXY_SECRET your_strong_random_secret_here
+SetEnv BP_DB_HOST      mysql.your-dreamhost-domain.com
+SetEnv BP_DB_PASS      your_mysql_password_here
+
+Options -Indexes
